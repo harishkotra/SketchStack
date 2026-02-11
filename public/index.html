@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SketchStack — AI Architecture Generator</title>
+  <meta name="description" content="Convert natural language architecture descriptions into draw.io diagrams using AI">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+
+<body>
+  <!-- ─── HEADER ─── -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon">⚡</div>
+        <div>
+          <h1 class="logo-title">SketchStack</h1>
+          <p class="logo-subtitle">AI Architecture Generator</p>
+        </div>
+      </div>
+      <div class="header-badge">
+        <span class="badge-dot"></span>
+        Powered by Ollama + draw.io MCP
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <!-- ─── LEFT PANEL ─── -->
+    <section class="panel panel-input">
+      <div class="panel-header">
+        <h2 class="panel-title">🏗️ Describe Your Architecture</h2>
+      </div>
+
+      <!-- Demo Presets -->
+      <div class="presets-section">
+        <label class="field-label">Quick Start — Demo Presets</label>
+        <div class="presets-grid" id="presets-grid">
+          <button class="preset-btn" data-preset="rag-pipeline">
+            <span class="preset-icon">🧠</span>
+            <span>RAG Pipeline</span>
+          </button>
+          <button class="preset-btn" data-preset="microservices">
+            <span class="preset-icon">🧩</span>
+            <span>Microservices</span>
+          </button>
+          <button class="preset-btn" data-preset="agent-system">
+            <span class="preset-icon">🤖</span>
+            <span>Agent System</span>
+          </button>
+          <button class="preset-btn" data-preset="event-driven-orders">
+            <span class="preset-icon">📨</span>
+            <span>Event-Driven</span>
+          </button>
+          <button class="preset-btn" data-preset="streaming-analytics">
+            <span class="preset-icon">🌊</span>
+            <span>Streaming Analytics</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Text Input -->
+      <div class="input-group">
+        <label class="field-label" for="description">System Description</label>
+        <textarea id="description" class="text-input" rows="8"
+          placeholder="Describe your system architecture in plain English...&#10;&#10;Example: Build a microservice e-commerce backend with API gateway, auth, product catalog, orders, payments, and a message queue for async processing."></textarea>
+      </div>
+
+      <!-- Options Row -->
+      <div class="options-row">
+        <div class="option-group">
+          <label class="field-label" for="cloud-provider">Cloud Provider</label>
+          <select id="cloud-provider" class="select-input">
+            <option value="neutral">Neutral / Generic</option>
+            <option value="aws">AWS</option>
+            <option value="gcp">Google Cloud</option>
+            <option value="azure">Microsoft Azure</option>
+          </select>
+        </div>
+        <div class="option-group">
+          <label class="field-label" for="architecture-style">Architecture Style</label>
+          <select id="architecture-style" class="select-input">
+            <option value="">Auto-detect</option>
+            <option value="microservices">Microservices</option>
+            <option value="serverless">Serverless</option>
+            <option value="monolith">Monolith</option>
+            <option value="event-driven">Event-Driven</option>
+            <option value="rag-pipeline">RAG Pipeline</option>
+            <option value="data-pipeline">Data Pipeline</option>
+            <option value="agent-workflow">Agent Workflow</option>
+            <option value="layered">Layered</option>
+            <option value="hexagonal">Hexagonal</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="action-buttons">
+        <button id="btn-generate" class="btn btn-primary">
+          <span class="btn-icon">🚀</span>
+          Generate Architecture
+        </button>
+      </div>
+
+      <!-- Refinement Section (shown after generation) -->
+      <div id="refine-section" class="refine-section hidden">
+        <div class="divider"></div>
+        <label class="field-label" for="refine-input">🔁 Refine Your Architecture</label>
+        <div class="refine-row">
+          <input id="refine-input" class="text-input refine-input" type="text"
+            placeholder='e.g. "Add caching", "Make it serverless", "Add observability"' />
+          <button id="btn-refine" class="btn btn-secondary">
+            <span class="btn-icon">✨</span>
+            Refine
+          </button>
+        </div>
+      </div>
+
+      <!-- Status -->
+      <div id="status" class="status hidden"></div>
+    </section>
+
+    <!-- ─── RIGHT PANEL ─── -->
+    <section class="panel panel-output">
+      <div class="panel-header">
+        <h2 class="panel-title">📐 Architecture Diagram</h2>
+        <div id="export-buttons" class="export-buttons hidden">
+          <button class="btn btn-export" data-format="drawio" title="Download .drawio file">
+            <span>📥</span> .drawio
+          </button>
+          <button class="btn btn-export" data-format="png" title="Export as PNG">
+            <span>🖼️</span> PNG
+          </button>
+          <button class="btn btn-export" data-format="svg" title="Export as SVG">
+            <span>📄</span> SVG
+          </button>
+          <button class="btn btn-export" data-format="pdf" title="Export as PDF">
+            <span>📑</span> PDF
+          </button>
+          <button id="btn-open-drawio" class="btn btn-accent" title="Open in draw.io editor">
+            <span>🖊️</span> Open in draw.io
+          </button>
+        </div>
+      </div>
+
+      <!-- Diagram Viewer -->
+      <div id="diagram-container" class="diagram-container">
+        <div class="diagram-placeholder" id="diagram-placeholder">
+          <div class="placeholder-icon">🏛️</div>
+          <h3>Your Architecture Diagram Will Appear Here</h3>
+          <p>Enter a description and click <strong>Generate Architecture</strong> to create your diagram.</p>
+        </div>
+        <iframe id="diagram-iframe" class="diagram-iframe hidden"
+          sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-storage-access-by-user-activation"></iframe>
+      </div>
+
+      <!-- Architecture Details -->
+      <div id="details-section" class="details-section hidden">
+        <div class="details-tabs">
+          <button class="tab-btn active" data-tab="components">Components</button>
+          <button class="tab-btn" data-tab="relationships">Relationships</button>
+          <button class="tab-btn" data-tab="json">Raw JSON</button>
+        </div>
+        <div class="tab-content" id="tab-components"></div>
+        <div class="tab-content hidden" id="tab-relationships"></div>
+        <div class="tab-content hidden" id="tab-json"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ─── LOADING OVERLAY ─── -->
+  <div id="loading-overlay" class="loading-overlay hidden">
+    <div class="loading-content">
+      <div class="loading-spinner"></div>
+      <h3 class="loading-title" id="loading-title">Generating Architecture...</h3>
+      <div class="loading-steps" id="loading-steps">
+        <div class="loading-step active" id="step-1">
+          <span class="step-indicator"></span>
+          <span>Analyzing requirements with Ollama...</span>
+        </div>
+        <div class="loading-step" id="step-2">
+          <span class="step-indicator"></span>
+          <span>Detecting architecture style...</span>
+        </div>
+        <div class="loading-step" id="step-3">
+          <span class="step-indicator"></span>
+          <span>Generating diagram layout...</span>
+        </div>
+        <div class="loading-step" id="step-4">
+          <span class="step-indicator"></span>
+          <span>Building draw.io XML...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+
+</html>
