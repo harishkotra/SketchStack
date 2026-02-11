@@ -9,6 +9,7 @@
     Powered by <strong>Ollama</strong> (Llama 3.2) and the <strong>draw.io MCP Server</strong>.
   </p>
 </div>
+
 ![NodeJS](https://img.shields.io/badge/Node.js-18+-green?logo=node.js)
 ![Ollama](https://img.shields.io/badge/Ollama-Local_LLM-blue)
 ![MCP](https://img.shields.io/badge/MCP-draw.io-orange)
@@ -22,6 +23,11 @@
 3. **Diagram is generated** as draw.io XML with proper layout, layers, and cloud icons.
 4. **Open in draw.io** editor for editing, or download as `.drawio` file.
 5. **Refine** iteratively — "Add caching", "Make it serverless", etc.
+
+<img width="1862" height="1199" alt="screencapture-localhost-3000-2026-02-11-19_11_11" src="https://github.com/user-attachments/assets/845bdc02-5550-4b7d-ac00-ae771e5c9111" />
+<img width="1862" height="1199" alt="screencapture-localhost-3000-2026-02-11-19_11_22" src="https://github.com/user-attachments/assets/4b305230-2963-4e76-a094-759f43aba748" />
+<img width="1862" height="1199" alt="screencapture-localhost-3000-2026-02-11-19_11_26" src="https://github.com/user-attachments/assets/8235bb7a-bd09-4ef1-83b5-376339bc9820" />
+<img width="1862" height="1238" alt="screencapture-localhost-3000-2026-02-11-19_18_04" src="https://github.com/user-attachments/assets/e2ca3bc6-1c52-41ea-97f4-2a840b4fa48f" />
 
 ---
 
@@ -51,7 +57,7 @@ graph LR
 
 ```bash
 # 1. Clone this repo
-git clone <your-repo-url> SketchStack
+git clone https://github.com/harishkotra/SketchStack SketchStack
 cd SketchStack
 
 # 2. Install dependencies
@@ -122,14 +128,6 @@ docker run -p 3000:3000 -e OLLAMA_URL=http://host.docker.internal:11434 sketchst
 
 ---
 
-## 📢 Social & Community
-
-- **LinkedIn Post**: [Coming Soon]
-- **Twitter Thread**: [Coming Soon]
-- **Technical Blog**: [Coming Soon]
-
----
-
 ## 🧱 Project Structure
 
 | File | Purpose |
@@ -140,9 +138,3 @@ docker run -p 3000:3000 -e OLLAMA_URL=http://host.docker.internal:11434 sketchst
 | `server/diagram/` | XML builder, layout engine, cloud icons |
 | `server/mcp/` | draw.io MCP client integration |
 | `public/` | Premium dark-mode UI |
-
----
-
-## 📄 License
-
-MIT
