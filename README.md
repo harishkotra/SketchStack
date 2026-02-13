@@ -32,6 +32,11 @@
 <img width="1862" height="1199" alt="screencapture-localhost-3000-2026-02-11-19_11_26" src="https://github.com/user-attachments/assets/8235bb7a-bd09-4ef1-83b5-376339bc9820" />
 <img width="1862" height="1238" alt="screencapture-localhost-3000-2026-02-11-19_18_04" src="https://github.com/user-attachments/assets/e2ca3bc6-1c52-41ea-97f4-2a840b4fa48f" />
 
+### Excalidraw MCP Demo
+
+<img width="1613" height="1331" alt="screencapture-localhost-3000-2026-02-13-13_06_49" src="https://github.com/user-attachments/assets/60572c4e-c1fa-4f58-a3b7-c4fdaa3d8479" />
+<img width="1613" height="1292" alt="screencapture-localhost-3000-2026-02-13-13_07_47" src="https://github.com/user-attachments/assets/8fd046c3-7c8d-4f98-ab1d-980ec8ac06fe" />
+
 ---
 
 ## 🎨 Excalidraw Support
