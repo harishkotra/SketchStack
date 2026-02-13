@@ -5,14 +5,15 @@
     <strong>AI-Powered Architecture Diagram Generator</strong>
   </p>
   <p>
-    Turn natural language descriptions into professional <code>draw.io</code> diagrams in seconds.<br>
-    Powered by <strong>Ollama</strong> (Llama 3.2) and the <strong>draw.io MCP Server</strong>.
+    Turn natural language descriptions into professional <code>draw.io</code> or hand-drawn <code>Excalidraw</code> diagrams in seconds.<br>
+    Powered by <strong>Ollama</strong> (Llama 3.2), <strong>draw.io MCP Server</strong>, and <strong>Excalidraw</strong>.
   </p>
 </div>
 
 ![NodeJS](https://img.shields.io/badge/Node.js-18+-green?logo=node.js)
 ![Ollama](https://img.shields.io/badge/Ollama-Local_LLM-blue)
 ![MCP](https://img.shields.io/badge/MCP-draw.io-orange)
+![Excalidraw](https://img.shields.io/badge/Excalidraw-Integration-pink)
 
 ---
 
@@ -20,14 +21,25 @@
 
 1. **Describe** your system in plain English.
 2. **AI extracts** components, relationships, data flows, and architecture style.
-3. **Diagram is generated** as draw.io XML with proper layout, layers, and cloud icons.
-4. **Open in draw.io** editor for editing, or download as `.drawio` file.
+3. **Diagram is generated** in your preferred format:
+    - **draw.io**: Professional, standard XML with cloud icons.
+    - **Excalidraw**: Hand-drawn style, perfect for drafting and prototyping.
+4. **Interactive Mode**: Expand Excalidraw diagrams to fullscreen for drag-and-drop editing.
 5. **Refine** iteratively — "Add caching", "Make it serverless", etc.
 
 <img width="1862" height="1199" alt="screencapture-localhost-3000-2026-02-11-19_11_11" src="https://github.com/user-attachments/assets/845bdc02-5550-4b7d-ac00-ae771e5c9111" />
 <img width="1862" height="1199" alt="screencapture-localhost-3000-2026-02-11-19_11_22" src="https://github.com/user-attachments/assets/4b305230-2963-4e76-a094-759f43aba748" />
 <img width="1862" height="1199" alt="screencapture-localhost-3000-2026-02-11-19_11_26" src="https://github.com/user-attachments/assets/8235bb7a-bd09-4ef1-83b5-376339bc9820" />
 <img width="1862" height="1238" alt="screencapture-localhost-3000-2026-02-11-19_18_04" src="https://github.com/user-attachments/assets/e2ca3bc6-1c52-41ea-97f4-2a840b4fa48f" />
+
+---
+
+## 🎨 Excalidraw Support
+
+SketchStack now supports **Excalidraw** for a sketch-style aesthetic. 
+- **Auto-Layout**: Uses `dagre` for smart hierarchical positioning.
+- **Interactive**: Toggle fullscreen to drag, move, and organize nodes.
+- **Hand-Drawn**: Great for high-level system design and whiteboard sessions.
 
 ---
 
@@ -38,10 +50,11 @@ graph LR
     A[User Description] --> B[Ollama LLM]
     B --> C[Zod Validator]
     C --> D[Architecture Agent]
-    D --> E[XML Builder]
-    E --> F[draw.io MCP]
-    E --> G[.drawio Download]
-    E --> H[Viewer Embed]
+    D --> E{Format Selector}
+    E -->|draw.io| F[XML Builder]
+    E -->|Excalidraw| G[Excalidraw Builder]
+    F --> H[draw.io MCP]
+    G --> I[Excalidraw App]
 ```
 
 ---

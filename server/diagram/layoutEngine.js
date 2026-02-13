@@ -54,50 +54,67 @@ export function assignLayer(type) {
     return mapping[type] || 'Application';
 }
 
+import dagre from 'dagre';
+
 /**
- * Compute positions for all nodes, grouping by layer and positioning left-to-right.
+ * Compute positions for all nodes using dagre for directed graph layout.
  * @param {Array<{id:string, label:string, type:string, layer?:string}>} nodes
+ * @param {Array<{from:string, to:string}>} edges
  * @returns {Array<{id:string, label:string, type:string, layer:string, x:number, y:number}>}
  */
-export function computeLayout(nodes) {
-    // Assign layers
-    const withLayers = nodes.map((n) => ({
-        ...n,
-        layer: n.layer || assignLayer(n.type),
-    }));
+export function computeLayout(nodes, edges = []) {
+    // Create a new directed graph
+    const g = new dagre.graphlib.Graph();
 
-    // Group by layer
-    const layerGroups = {};
-    for (const layer of LAYER_ORDER) {
-        layerGroups[layer] = [];
-    }
-    for (const node of withLayers) {
-        if (!layerGroups[node.layer]) {
-            layerGroups[node.layer] = [];
-        }
-        layerGroups[node.layer].push(node);
-    }
+    // Set an object for the graph label
+    g.setGraph({
+        rankdir: 'LR',
+        align: 'UL',
+        nodesep: horizontalSpacing,
+        ranksep: layerGap,
+        marginx: startX,
+        marginy: startY
+    });
 
-    // Position nodes
+    // Default to assigning a new object for the edge label
+    g.setDefaultEdgeLabel(function () { return {}; });
+
+    // Add nodes to the graph. The first argument is the node id. The second is
+    // metadata about the node. In this case we're going to add labels to each of
+    // our nodes.
+    nodes.forEach((node) => {
+        g.setNode(node.id, {
+            label: node.label,
+            width: nodeWidth,
+            height: nodeHeight,
+            // Keep original data
+            original: node
+        });
+    });
+
+    // Add edges to the graph.
+    edges.forEach((edge) => {
+        g.setEdge(edge.from, edge.to);
+    });
+
+    // Compute the layout
+    dagre.layout(g);
+
+    // Extract positioned nodes
     const positioned = [];
-    let currentY = startY;
-
-    for (const layer of LAYER_ORDER) {
-        const group = layerGroups[layer];
-        if (group.length === 0) continue;
-
-        let currentX = startX;
-        for (const node of group) {
-            positioned.push({
-                ...node,
-                x: currentX,
-                y: currentY,
-            });
-            currentX += nodeWidth + horizontalSpacing;
-        }
-
-        currentY += nodeHeight + layerGap;
-    }
+    g.nodes().forEach((v) => {
+        const node = g.node(v);
+        // node.x and node.y are the center of the node in dagre
+        // Our renderer expects top-left (usually), but let's check excalidrawBuilder.
+        // excalidrawBuilder uses x, y directly for shape.x/y.
+        // Excalidraw rectangles are positioned by top-left.
+        // Dagre gives center. So we need to subtract half width/height.
+        positioned.push({
+            ...node.original,
+            x: node.x - nodeWidth / 2,
+            y: node.y - nodeHeight / 2,
+        });
+    });
 
     return positioned;
 }

@@ -25,7 +25,7 @@ let sessionCounter = 0;
  */
 router.post('/generate', async (req, res) => {
     try {
-        const { description, cloudProvider, architectureStyle, model } = req.body;
+        const { description, cloudProvider, architectureStyle, model, format } = req.body;
 
         if (!description || typeof description !== 'string' || description.trim().length === 0) {
             return res.status(400).json({ error: 'Description is required' });
@@ -33,7 +33,7 @@ router.post('/generate', async (req, res) => {
 
         console.log(`\n${'='.repeat(60)}`);
         console.log('[api] Generating architecture diagram...');
-        console.log(`[api] Cloud: ${cloudProvider || 'neutral'}, Style: ${architectureStyle || 'auto'}`);
+        console.log(`[api] Cloud: ${cloudProvider || 'neutral'}, Style: ${architectureStyle || 'auto'}, Format: ${format || 'drawio'}`);
         console.log(`[api] Description: ${description.slice(0, 100)}...`);
         console.log('='.repeat(60));
 
@@ -44,28 +44,35 @@ router.post('/generate', async (req, res) => {
             model,
         });
 
-        const xml = buildMxGraphXml(diagramPlan, cloudProvider || 'neutral', 'Architecture Diagram');
-        const drawioUrl = generateDrawioUrl(xml);
-        const viewerUrl = generateViewerUrl(xml);
-
         // Store session
         const sessionId = `session_${++sessionCounter}`;
-        sessions.set(sessionId, {
+        const sessionData = {
             architecturePlan,
             diagramPlan,
-            xml,
             cloudProvider: cloudProvider || 'neutral',
             description,
-        });
+            format: format || 'drawio',
+        };
 
-        res.json({
-            sessionId,
-            architecturePlan,
-            diagramPlan,
-            xml,
-            drawioUrl,
-            viewerUrl,
-        });
+        let response = { sessionId, architecturePlan, diagramPlan };
+
+        if (format === 'excalidraw') {
+            const { buildExcalidrawJson } = await import('./diagram/excalidrawBuilder.js');
+            const excalidrawJson = buildExcalidrawJson(diagramPlan);
+            sessionData.excalidrawJson = excalidrawJson;
+            response.excalidrawJson = excalidrawJson;
+        } else {
+            const xml = buildMxGraphXml(diagramPlan, cloudProvider || 'neutral', 'Architecture Diagram');
+            const drawioUrl = generateDrawioUrl(xml);
+            const viewerUrl = generateViewerUrl(xml);
+            sessionData.xml = xml;
+            response.xml = xml;
+            response.drawioUrl = drawioUrl;
+            response.viewerUrl = viewerUrl;
+        }
+
+        sessions.set(sessionId, sessionData);
+        res.json(response);
     } catch (err) {
         console.error('[api] Generate error:', err);
         res.status(500).json({
@@ -228,6 +235,54 @@ router.get('/config', (_req, res) => {
         layers: config.layers,
         defaultModel: config.ollama.model,
     });
+});
+
+/**
+ * POST /api/excalidraw/share
+ * Share Excalidraw diagram via MCP.
+ * Body: { sessionId }
+ */
+router.post('/excalidraw/share', async (req, res) => {
+    try {
+        const { sessionId } = req.body;
+        const session = sessions.get(sessionId);
+
+        if (!session || !session.excalidrawJson) {
+            return res.status(404).json({ error: 'Session or Excalidraw data not found' });
+        }
+
+        const { callExcalidrawTool } = await import('./mcp/excalidrawClient.js');
+        console.log('[api] Calling Excalidraw MCP to export...');
+
+        const result = await callExcalidrawTool('export_to_excalidraw', {
+            json: JSON.stringify(session.excalidrawJson),
+        });
+
+        // Result content is [{ type: 'text', text: 'https://excalidraw.com/...' }]
+        const url = result.content[0].text;
+        res.json({ url });
+    } catch (err) {
+        console.error('[api] Excalidraw share error:', err);
+        res.status(500).json({ error: 'Failed to share diagram', details: err.message });
+    }
+});
+
+router.post('/mcp', async (req, res) => {
+    try {
+        const { method, params } = req.body;
+        const { callExcalidrawTool } = await import('./mcp/excalidrawClient.js');
+
+        if (method === 'tools/call') {
+            const result = await callExcalidrawTool(params.name, params.arguments);
+            res.json({ result });
+        } else {
+            console.warn('[api] Unsupported MCP method:', method);
+            res.status(400).json({ error: 'Unsupported method' });
+        }
+    } catch (err) {
+        console.error('[api] MCP Proxy Error:', err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 export default router;

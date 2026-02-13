@@ -99,6 +99,10 @@
             return;
         }
 
+        const format = document.getElementById('diagram-format').value;
+        const step4Text = format === 'excalidraw' ? 'Building Excalidraw JSON...' : 'Building draw.io XML...';
+        document.querySelector('#step-4 span:last-child').textContent = step4Text;
+
         showLoading('Generating Architecture...');
         $btnGenerate.disabled = true;
         hideStatus();
@@ -113,6 +117,7 @@
                     description,
                     cloudProvider: $cloudProvider.value,
                     architectureStyle: $architectureStyle.value || undefined,
+                    format,
                 }),
             });
 
@@ -231,12 +236,174 @@
 
     // ─── Render Diagram ───
     function renderDiagram(data) {
+        // Excalidraw Mode
+        if (data.excalidrawJson) {
+            $diagramPlaceholder.classList.add('hidden');
+            $diagramIframe.src = '/mcp/app';
+            $diagramIframe.classList.remove('hidden');
+
+            // Store data for the handshake
+            currentData.pendingExcalidrawJson = data.excalidrawJson;
+            return;
+        }
+
+        // Draw.io Mode
         if (data.viewerUrl) {
+            $diagramPlaceholder.innerHTML = '';
+            $diagramPlaceholder.classList.add('hidden');
             $diagramIframe.src = data.viewerUrl;
             $diagramIframe.classList.remove('hidden');
-            $diagramPlaceholder.classList.add('hidden');
         }
     }
+
+    // ─── MCP App Host Protocol ───
+    window.addEventListener('message', async (event) => {
+        // Security check: ensure origin matches (self)
+        if (event.origin !== window.origin) return;
+
+        const msg = event.data;
+        if (!msg || typeof msg !== 'object') return;
+
+        // 1. Handshake: ui/initialize
+        if (msg.method === 'ui/initialize') {
+            console.log('[MCP Host] Handshake received:', JSON.stringify(msg));
+            const response = {
+                jsonrpc: '2.0',
+                id: msg.id,
+                result: {
+                    protocolVersion: '2025-11-21',
+                    hostInfo: {
+                        name: 'SketchStack',
+                        version: '1.0.0'
+                    },
+                    hostCapabilities: {
+                        logging: {},
+                        serverTools: { listChanged: true }
+                    },
+                    hostContext: {
+                        containerDimensions: {
+                            width: document.getElementById('diagram-iframe').getBoundingClientRect().width || 800,
+                            height: document.getElementById('diagram-iframe').getBoundingClientRect().height || 600
+                        },
+                        displayMode: 'inline',
+                        theme: 'light'
+                    }
+                }
+            };
+            // Send back to the iframe
+            const iframeWindow = document.getElementById('diagram-iframe').contentWindow;
+            if (iframeWindow) {
+                iframeWindow.postMessage(response, window.origin);
+
+                // 2. Send initial data if we have it
+                if (currentData.pendingExcalidrawJson) {
+                    console.log('[MCP Host] Sending initial diagram data...');
+                    const notification = {
+                        jsonrpc: '2.0',
+                        method: 'ui/notifications/tool-input',
+                        params: {
+                            arguments: {
+                                elements: currentData.pendingExcalidrawJson.elements
+                            }
+                        }
+                    };
+                    iframeWindow.postMessage(notification, window.origin);
+                    currentData.pendingExcalidrawJson = null;
+                }
+            }
+            return;
+        }
+
+        // 3. Proxy tool calls: tools/call
+        if (msg.method === 'tools/call') {
+            console.log('[MCP Host] Tool call:', msg.params.name);
+            const iframeWindow = document.getElementById('diagram-iframe').contentWindow;
+            if (!iframeWindow) return;
+
+            try {
+                const res = await fetch('/api/mcp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        method: 'tools/call',
+                        params: msg.params
+                    })
+                });
+                const data = await res.json();
+
+                const response = {
+                    jsonrpc: '2.0',
+                    id: msg.id,
+                    result: data.result
+                };
+                iframeWindow.postMessage(response, window.origin);
+            } catch (err) {
+                console.error('[MCP Host] Tool call failed:', err);
+                const errorResponse = {
+                    jsonrpc: '2.0',
+                    id: msg.id,
+                    error: {
+                        code: -32000,
+                        message: err.message
+                    }
+                };
+                iframeWindow.postMessage(errorResponse, window.origin);
+            }
+        }
+
+        // 4. Handle display mode requests (Fullscreen toggle)
+        if (msg.method === 'ui/request-display-mode') {
+            const mode = msg.params.mode;
+            console.log('[MCP Host] Display mode request:', mode);
+
+            const iframe = document.getElementById('diagram-iframe');
+            const container = document.getElementById('diagram-container');
+
+            if (mode === 'fullscreen') {
+                container.classList.add('fullscreen');
+                // Allow interactions
+                iframe.style.pointerEvents = 'all';
+            } else {
+                container.classList.remove('fullscreen');
+                // Disable interactions in inline mode (optional, but consistent with "preview")
+                // iframe.style.pointerEvents = 'none'; 
+            }
+
+            // Acknowledge the mode change
+            const response = {
+                jsonrpc: '2.0',
+                id: msg.id,
+                result: { mode }
+            };
+            const iframeWindow = iframe.contentWindow;
+            if (iframeWindow) {
+                iframeWindow.postMessage(response, window.origin);
+
+                // Also notify context changed
+                const notification = {
+                    jsonrpc: '2.0',
+                    method: 'ui/notifications/host-context-changed',
+                    params: {
+                        displayMode: mode,
+                        containerDimensions: {
+                            width: iframe.getBoundingClientRect().width,
+                            height: iframe.getBoundingClientRect().height
+                        }
+                    }
+                };
+                iframeWindow.postMessage(notification, window.origin);
+            }
+        }
+
+        // 5. Handle logging from guest (notifications/message)
+        if (msg.method === 'notifications/message') {
+            const params = msg.params || {};
+            const level = params.level || 'info';
+            const logger = params.logger || 'Guest';
+            const data = params.data;
+            console.log(`[MCP ${logger}] [${level}]`, data);
+        }
+    });
 
     // ─── Render Details ───
     function renderDetails(data) {
@@ -288,7 +455,14 @@
     // ─── Show/Hide UI elements ───
     function showUI() {
         $refineSection.classList.remove('hidden');
-        $exportButtons.classList.remove('hidden');
+
+        // Hide Draw.io export buttons if in Excalidraw mode
+        if (currentData && currentData.excalidrawJson) {
+            $exportButtons.classList.add('hidden');
+        } else {
+            $exportButtons.classList.remove('hidden');
+        }
+
         $detailsSection.classList.remove('hidden');
     }
 

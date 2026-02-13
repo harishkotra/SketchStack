@@ -24,15 +24,21 @@ const config = {
     maxRetries: 2,
   },
 
+  excalidraw: {
+    command: 'node',
+    args: ['server/mcp/excalidraw-mcp/dist/index.js', '--stdio'],
+    maxRetries: 3,
+  },
+
   /** Diagram layout */
   layout: {
-    nodeWidth: 160,
-    nodeHeight: 80,
-    horizontalSpacing: 140, // Increased for horizontal routing
-    verticalSpacing: 80,
-    layerGap: 140,          // Increased for cross-layer routing
-    startX: 60,
-    startY: 60,
+    nodeWidth: 220,
+    nodeHeight: 110,
+    horizontalSpacing: 300,
+    verticalSpacing: 200,
+    layerGap: 400,
+    startX: 100,
+    startY: 100,
   },
 
   /** Layer ordering (top → bottom) */

@@ -26,6 +26,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 // --- API routes ---
 app.use('/api', apiRoutes);
 
+// --- MCP App Route ---
+app.get('/mcp/app', (_req, res) => {
+    res.sendFile(path.join(__dirname, 'server/mcp/excalidraw-mcp/dist/mcp-app.html'));
+});
+
 // --- SPA fallback ---
 app.get('{*path}', (_req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
